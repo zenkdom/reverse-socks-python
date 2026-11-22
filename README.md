@@ -1,5 +1,17 @@
 # Reverse SOCKS5, UDP, HTTP & MTProto Proxy Cluster (Python)
 
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Version Available](https://img.shields.io/badge/High--Speed-Go%20Version-brightgreen.svg)](https://github.com/zenkdom/reverse-socks-go)
+[![Telegram Fake-TLS 1.3](https://img.shields.io/badge/Telegram-MTProto%20Fake--TLS-blue.svg)](https://telegram.org)
+
+> [!IMPORTANT]
+> 🚀 **Высокая нагрузка и максимальная стабильность:**  
+> Для высоконагруженных продакшн-серверов и максимальной скорости передачи данных рекомендуется использовать **[Go-версию Reverse SOCKS Cluster](https://github.com/zenkdom/reverse-socks-go)**.  
+> 
+> 🔄 **100% Кроссплатформенная совместимость протокола:**  
+> Обе версии (Python и Go) используют единый бинарный протокол мультиплексирования. Исполняющий агент на Python (`socks-reverse`) может подключаться к Control-серверу на Go, а агент на Go — к Control-серверу на Python!
+
 Высокопроизводительная система обратного прокси-кластера на Python (`asyncio`):
 - **Универсальный Multi-Protocol прокси** (порт `1080`):
   - **SOCKS5 с поддержкой TCP и UDP**: команды `CONNECT` (0x01), `BIND` (0x02), и `UDP ASSOCIATE` (0x03) по RFC 1928 / RFC 1929. Полная поддержка звонков Telegram, голосовых чатов, WebRTC, DNS, онлайн-игр и QUIC/HTTP3.
@@ -18,7 +30,7 @@
                              +---------------------------------------+
                              |           ВЕБ-АДМИНИСТРАТОР           |
                              |      http://IP_CONTROL:9001           |
-                             |       Логин: ziqp / ziqp2010          |
+                             |       Логин: admin / changeme123      |
                              +-------------------+-------------------+
                                                  |
                                                  | 1-клик подключение в Telegram /
@@ -64,7 +76,7 @@
 
 1. **Проблема SOCKS5 в Telegram:**
    - Протокол SOCKS5 при подключении к Telegram передает открытую команду: `CONNECT 149.154.167.51:443`.
-   - Российские ТСПУ (DPI) в режиме реального времени видят IP-адреса дата-центров Telegram (`149.154.x.x`, `91.108.x.x`) и сразу сбрасывают TCP-соединение пакетом `TCP RST`. Из-за этого Telegram в логах постоянно писал `user ziqp authenticated`, но подключиться не мог.
+   - Российские ТСПУ (DPI) в режиме реального времени видят IP-адреса дата-центров Telegram (`149.154.x.x`, `91.108.x.x`) и сразу сбрасывают TCP-соединение пакетом `TCP RST`. Из-за этого Telegram в логах постоянно писал `user admin authenticated`, но подключиться не мог.
 2. **Решение — MTProto Proxy с Fake-TLS (`ee...`):**
    - MTProto на порту `8443` упаковывает трафик в **Fake-TLS 1.3**.
    - Для ТСПУ это выглядит как абсолютно легитимный защищенный HTTPS-сеанс к `google.com` (SNI: `google.com`). ТСПУ не может расшифровать или заблокировать его.
@@ -81,7 +93,7 @@
    - **Поддержка Промо-каналов (TAG):** привязка MTProto Tag (полученного от `@MTProxybot`) к клиентам прямо из веб-админки.
    - Защита от активных зондов ТСПУ: при сканировании порта прокси перенаправляет зонд на реальный сервер Google, возвращая валидный TLS-сертификат Google.
 2. **Встроенная Web-Админка на порту `9001`**:
-   - Вход: **Логин:** `ziqp`, **Пароль:** `ziqp2010`.
+   - Вход: **Логин:** `admin`, **Пароль:** `changeme123`.
    - **Управление клиентами MTProto:**
      - Создание клиентов Telegram с индивидуальными Secret Key (32 hex символа или автогенерация безопасного ключа в 1 клик).
      - Поле **Promo TAG** в таблице клиентов с кнопкой мгновенного сохранения `💾` для продвижения спонсорского канала.
@@ -195,8 +207,8 @@ reverse socks/
      "admin": {
        "host": "0.0.0.0",
        "port": 9001,
-       "username": "ziqp",
-       "password": "ziqp2010"
+       "username": "admin",
+       "password": "changeme123"
      },
      "balance_strategy": "random",
      "log_level": "INFO"
@@ -215,7 +227,7 @@ reverse socks/
 ### Шаг 2. Подключение Telegram в 1 клик через веб-админку
 
 1. Откройте в браузере: `http://IP_ВАШЕГО_СЕРВЕРА:9001`
-2. Введите логин: `ziqp` и пароль: `ziqp2010`.
+2. Введите логин: `admin` и пароль: `changeme123`.
 3. В зеленом блоке **«⚡ Telegram MTProto Proxy (Fake-TLS)»** нажмите зеленую кнопку:
    **«🚀 Подключить в Telegram (1 клик)»**
 4. Telegram автоматически откроет окно настроек с заполненными параметрами:
