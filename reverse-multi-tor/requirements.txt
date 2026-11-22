@@ -1,0 +1,2 @@
+# All standard library (asyncio, socket, json, struct, etc.)
+# No external dependencies required!

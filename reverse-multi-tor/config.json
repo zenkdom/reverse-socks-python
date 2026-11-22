@@ -1,0 +1,20 @@
+{
+  "control_server": {
+    "host": "127.0.0.1",
+    "port": 9000,
+    "secret_token": "SecretProxyToken2026!"
+  },
+  "cluster": {
+    "node_count": 10,
+    "prefix": "tor-node-",
+    "tor_host": "127.0.0.1",
+    "tor_start_port": 9050,
+    "tor_control_port": 9049,
+    "ensure_unique_ips": true,
+    "check_ips_on_start": false
+  },
+  "connect_timeout": 20,
+  "keepalive_interval": 25,
+  "reconnect_delay": 3,
+  "log_level": "INFO"
+}

@@ -1,0 +1,31 @@
+{
+  "socks5": {
+    "host": "0.0.0.0",
+    "port": 1080
+  },
+  "control": {
+    "host": "0.0.0.0",
+    "port": 9000,
+    "secret_token": "SecretProxyToken2026!"
+  },
+  "mtproto": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 8443,
+    "secret": "d04843361111fc744f516582107f9fb6",
+    "tag": "",
+    "domain": "google.com",
+    "mask_host": "google.com",
+    "mask_port": 443
+  },
+  "admin": {
+    "host": "0.0.0.0",
+    "port": 9001,
+    "username": "admin",
+    "password": "changeme123"
+  },
+  "balance_strategy": "rotation",
+  "fast_failover_seconds": 4.0,
+  "connect_timeout": 20.0,
+  "log_level": "INFO"
+}

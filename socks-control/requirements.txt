@@ -1,0 +1,2 @@
+# Cryptography library for high-speed AES-CTR and HMAC in MTProto Fake-TLS:
+cryptography>=3.4.0

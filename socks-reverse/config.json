@@ -1,0 +1,17 @@
+{
+  "control_server": {
+    "host": "127.0.0.1",
+    "port": 9000,
+    "secret_token": "SecretProxyToken2026!"
+  },
+  "fake_tls": {
+    "enabled": false,
+    "domain": "google.com"
+  },
+  
+  "agent_id": "reverse-node-1",
+  "connect_timeout": 15,
+  "keepalive_interval": 25,
+  "reconnect_delay": 3,
+  "log_level": "INFO"
+}

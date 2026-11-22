@@ -1,0 +1,15 @@
+[Unit]
+Description=Reverse SOCKS5 Control Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/socks-control
+ExecStart=/usr/bin/python3 /opt/socks-control/server.py
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

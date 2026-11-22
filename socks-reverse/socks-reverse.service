@@ -1,0 +1,15 @@
+[Unit]
+Description=Reverse SOCKS5 Worker Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/socks-reverse
+ExecStart=/usr/bin/python3 /opt/socks-reverse/client.py
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
