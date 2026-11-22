@@ -144,7 +144,6 @@ reverse-socks-python/
 │   ├── start_tor.sh             # Tor multi-port setup script
 │   └── start_cluster.sh         # Master launch script
 │
-├── test_system.py               # End-to-end integration test suite
 └── README.md                    # Documentation
 ```
 
@@ -215,15 +214,6 @@ python3 client.py --host YOUR_CONTROL_SERVER_IP --port 9000 --token SecretProxyT
 ```bash
 cd reverse-multi-tor
 sudo bash start_cluster.sh
-```
-
----
-
-## 🧪 Testing
-
-Run the full end-to-end integration test suite locally:
-```bash
-python test_system.py
 ```
 
 ---
