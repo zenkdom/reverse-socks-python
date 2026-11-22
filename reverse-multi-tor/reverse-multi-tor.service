@@ -1,5 +1,5 @@
 [Unit]
-Description=Reverse Multi-Tor Proxy Cluster (50 Nodes)
+Description=Reverse Multi-Tor Proxy Cluster (10 Nodes)
 After=network.target
 
 [Service]

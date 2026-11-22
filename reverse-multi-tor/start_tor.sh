@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Setup 50-Port Multi-Tor Service on Ubuntu/Debian
-# Configures system Tor daemon (/etc/tor/torrc) with 50 isolated SOCKS ports
+# Setup 10-Port Multi-Tor Service on Ubuntu/Debian
+# Configures system Tor daemon (/etc/tor/torrc) with 10 isolated SOCKS ports
 # ==============================================================================
 set -e
 
 echo "=========================================================="
-echo "          Setting up 50-Port Multi-Tor Service            "
+echo "          Setting up 10-Port Multi-Tor Service            "
 echo "=========================================================="
 
 # 1. Install Tor if missing
