@@ -61,13 +61,13 @@ class UserManager:
         username = username.strip()
         password = password.strip()
         if not username:
-            return False, "Имя пользователя не может быть пустым"
+            return False, "Username cannot be empty"
         if not password:
-            return False, "Пароль не может быть пустым"
+            return False, "Password cannot be empty"
 
         async with self._lock:
             if username in self.users:
-                return False, f"Пользователь '{username}' уже существует"
+                return False, f"User '{username}' already exists"
 
             self.users[username] = {
                 "username": username,
@@ -76,19 +76,19 @@ class UserManager:
             }
             self.save_sync()
             logger.info(f"Added SOCKS5 user '{username}'")
-            return True, f"Пользователь '{username}' успешно добавлен"
+            return True, f"User '{username}' added successfully"
 
     async def delete_user(self, username: str) -> tuple[bool, str]:
         """Delete an existing SOCKS5 user."""
         username = username.strip()
         async with self._lock:
             if username not in self.users:
-                return False, f"Пользователь '{username}' не найден"
+                return False, f"User '{username}' not found"
 
             del self.users[username]
             self.save_sync()
             logger.info(f"Deleted SOCKS5 user '{username}'")
-            return True, f"Пользователь '{username}' успешно удален"
+            return True, f"User '{username}' deleted successfully"
 
     def authenticate(self, username: str, password: str) -> bool:
         """Validate SOCKS5 username and password."""

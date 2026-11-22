@@ -443,7 +443,7 @@ async def main():
         f"http://127.0.0.1:{ADMIN_PORT}/login",
         {"username": "ziqp", "password": "wrong_password"},
     )
-    assert "Location: /login?error=" in bad_login or "Неверный" in bad_login
+    assert "Location: /login?error=" in bad_login or "Invalid" in bad_login or "Неверный" in bad_login
     print("  [OK] Admin rejected invalid login attempt")
 
     # 5b. Admin login with correct password ziqp / ziqp2010

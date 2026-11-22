@@ -251,11 +251,11 @@ class AdminWebServer:
         )
 
         content = f"""<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Вход | SOCKS5 Control Admin</title>
+<title>Sign In | SOCKS5 Control Admin</title>
 <style>
 * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
 body {{ background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }}
@@ -275,18 +275,18 @@ button:hover {{ background: #4f46e5; }}
 <body>
 <div class="card">
   <h1>SOCKS5 Control</h1>
-  <p class="sub">Панель администратора сервера</p>
+  <p class="sub">Server Administration Dashboard</p>
   {error_html}
   <form method="POST" action="/login">
     <div class="form-group">
-      <label for="username">Логин</label>
+      <label for="username">Username</label>
       <input type="text" id="username" name="username" required autocomplete="username" autofocus>
     </div>
     <div class="form-group">
-      <label for="password">Пароль</label>
+      <label for="password">Password</label>
       <input type="password" id="password" name="password" required autocomplete="current-password">
     </div>
-    <button type="submit">Войти</button>
+    <button type="submit">Sign In</button>
   </form>
 </div>
 </body>
@@ -308,7 +308,7 @@ button:hover {{ background: #4f46e5; }}
                 cookies=[f"admin_session={token}; Path=/; HttpOnly; SameSite=Lax"],
             )
         else:
-            self._send_redirect(writer, "/login?error=" + urllib.parse.quote("Неверный логин или пароль"))
+            self._send_redirect(writer, "/login?error=" + urllib.parse.quote("Invalid username or password"))
 
     async def _route_logout(self, writer: asyncio.StreamWriter, headers: dict):
         cookie_header = headers.get("cookie", "")
@@ -340,7 +340,7 @@ button:hover {{ background: #4f46e5; }}
         # Agents table rows
         agents_rows = ""
         if not agents:
-            agents_rows = '<tr><td colspan="6" class="empty">Нет активных reverse-нод. Подключите socks-reverse сервер.</td></tr>'
+            agents_rows = '<tr><td colspan="6" class="empty">No active reverse nodes. Connect a socks-reverse node сервер.</td></tr>'
         else:
             for a in agents:
                 uptime = self._format_duration(a["uptime_seconds"])
@@ -353,7 +353,7 @@ button:hover {{ background: #4f46e5; }}
 
                 exit_ip = a.get("exit_ip")
                 if exit_ip and exit_ip != a['remote_ip']:
-                    ip_display = f"<code>{html.escape(exit_ip)}</code> <span style='font-size:10px; color:#34d399; font-weight:600;'>✓ Выходной IP</span><br><span style='font-size:11px; color:#64748b;'>Шлюз: {html.escape(a['remote_ip'])}</span>"
+                    ip_display = f"<code>{html.escape(exit_ip)}</code> <span style='font-size:10px; color:#34d399; font-weight:600;'>✓ Exit IP</span><br><span style='font-size:11px; color:#64748b;'>Шлюз: {html.escape(a['remote_ip'])}</span>"
                 else:
                     ip_display = f"<code>{html.escape(a['remote_ip'])}</code>"
 
@@ -369,7 +369,7 @@ button:hover {{ background: #4f46e5; }}
         # Users table rows
         users_rows = ""
         if not users:
-            users_rows = '<tr><td colspan="5" class="empty">Список пользователей пуст. Добавьте первого пользователя ниже.</td></tr>'
+            users_rows = '<tr><td colspan="5" class="empty">User list is empty. Add a new user below.</td></tr>'
         else:
             for u in users:
                 uname = u['username']
@@ -384,12 +384,12 @@ button:hover {{ background: #4f46e5; }}
                 users_rows += f"""<tr>
                   <td><strong>{html.escape(uname)}</strong></td>
                   <td><code>{html.escape(u['password'])}</code></td>
-                  <td>{last_node} <span style="font-size:11px; color:#94a3b8;">({req_count} запр.)</span></td>
+                  <td>{last_node} <span style="font-size:11px; color:#94a3b8;">({req_count} reqs)</span></td>
                   <td>{html.escape(u.get('created_at', '-'))}</td>
                   <td>
-                    <form method="POST" action="/users/delete" style="display:inline;" onsubmit="return confirm('Удалить пользователя {html.escape(uname)}?');">
+                    <form method="POST" action="/users/delete" style="display:inline;" onsubmit="return confirm('Delete user {html.escape(uname)}?');">
                       <input type="hidden" name="username" value="{html.escape(uname)}">
-                      <button type="submit" class="btn-danger">Удалить</button>
+                      <button type="submit" class="btn-danger">Delete</button>
                     </form>
                   </td>
                 </tr>"""
@@ -398,7 +398,7 @@ button:hover {{ background: #4f46e5; }}
         mtproto_clients = self.mtproto_user_manager.get_all_clients() if self.mtproto_user_manager else []
         mtproto_clients_rows = ""
         if not mtproto_clients:
-            mtproto_clients_rows = '<tr><td colspan="7" class="empty">Список клиентов MTProto пуст. Создайте первого клиента ниже.</td></tr>'
+            mtproto_clients_rows = '<tr><td colspan="7" class="empty">MTProto client list is empty. Create a new client below.</td></tr>'
         else:
             for c in mtproto_clients:
                 raw_c_name = c.get("client_name", "")
@@ -419,7 +419,7 @@ button:hover {{ background: #4f46e5; }}
                 tag_badge = (
                     f'<span class="badge active" style="font-size:9px; background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b;">✓ TAG АКТИВЕН</span>'
                     if raw_c_tag
-                    else '<span style="font-size:10px; color:#64748b;">Тег не привязан</span>'
+                    else '<span style="font-size:10px; color:#64748b;">No TAG attached</span>'
                 )
                 mtproto_clients_rows += f"""<tr>
                   <td><span class="badge active" style="font-size:10px;">TG</span> <strong>{c_name}</strong></td>
@@ -428,12 +428,12 @@ button:hover {{ background: #4f46e5; }}
                   <td>
                     <form method="POST" action="/mtproto/set_tag" style="display:flex; gap:4px; align-items:center;">
                       <input type="hidden" name="client_name" value="{c_name}">
-                      <input type="text" name="tag" value="{c_tag}" placeholder="32 hex тег бота" style="width:160px; padding:4px 6px; font-size:11px; background:#0f172a; border:1px solid #334155; border-radius:4px; color:#fbbf24; font-family:monospace;" title="32-значный hex TAG промо-канала из @MTProxybot">
+                      <input type="text" name="tag" value="{c_tag}" placeholder="32 hex bot tag" style="width:160px; padding:4px 6px; font-size:11px; background:#0f172a; border:1px solid #334155; border-radius:4px; color:#fbbf24; font-family:monospace;" title="32-значный hex TAG промо-канала из @MTProxybot">
                       <button type="submit" class="btn-primary" style="padding:4px 7px; font-size:11px; background:#f59e0b; color:#0f172a; font-weight:700;" title="Сохранить TAG промо-канала">💾</button>
                     </form>
                     <div style="margin-top:2px;">{tag_badge}</div>
                   </td>
-                  <td>{last_node} <span style="font-size:11px; color:#94a3b8;">({req_count} запр.)</span></td>
+                  <td>{last_node} <span style="font-size:11px; color:#94a3b8;">({req_count} reqs)</span></td>
                   <td>{c_created}</td>
                   <td style="white-space:nowrap;">
                     <div style="display:flex; flex-direction:column; gap:4px;">
@@ -446,7 +446,7 @@ button:hover {{ background: #4f46e5; }}
                         <button type="button" class="btn-primary" style="background:#1e293b; border:1px solid #475569; font-size:11px; padding:4px 7px; cursor:pointer;" title="Скопировать ссылку Hex32" onclick="copyTgForSecret('{c_secret}', 'Hex32')">📋 Hex32</button>
                         <form method="POST" action="/mtproto/delete" style="display:inline; margin-left:auto;" onsubmit="return confirm('Удалить MTProto клиента {c_name}?');">
                           <input type="hidden" name="client_name" value="{c_name}">
-                          <button type="submit" class="btn-danger" style="padding:4px 8px; font-size:11px;" title="Удалить клиента">✕</button>
+                          <button type="submit" class="btn-danger" style="padding:4px 8px; font-size:11px;" title="Delete client">✕</button>
                         </form>
                       </div>
                     </div>
@@ -454,7 +454,7 @@ button:hover {{ background: #4f46e5; }}
                 </tr>"""
 
         content = f"""<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -512,8 +512,8 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
       <h1>SOCKS5 Reverse Cluster</h1>
     </div>
     <div class="header-actions">
-      <span class="user-badge">Администратор: <strong>{html.escape(self.admin_user)}</strong></span>
-      <a href="/logout" class="btn-logout">Выйти</a>
+      <span class="user-badge">Admin: <strong>{html.escape(self.admin_user)}</strong></span>
+      <a href="/logout" class="btn-logout">Sign Out</a>
     </div>
   </header>
 
@@ -521,19 +521,19 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-title">Активные Reverse Ноды</div>
+      <div class="stat-title">Active Reverse Nodes</div>
       <div class="stat-value">{len(agents)}</div>
-      <div class="stat-desc">Исполняющие серверы в сети</div>
+      <div class="stat-desc">Online exit servers</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title">Пользователи SOCKS5</div>
+      <div class="stat-title">SOCKS5 Users</div>
       <div class="stat-value">{len(users)}</div>
-      <div class="stat-desc">Авторизованные клиенты</div>
+      <div class="stat-desc">Authorized accounts</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title">SOCKS5 Порт</div>
+      <div class="stat-title">SOCKS5 Port</div>
       <div class="stat-value">{self.socks5_port}</div>
-      <div class="stat-desc">Аутентификация: <strong>СТРОГО ВКЛ</strong></div>
+      <div class="stat-desc">Authentication: <strong>REQUIRED</strong></div>
     </div>
     <div class="stat-card" style="border-color: rgba(16, 185, 129, 0.4);">
       <div class="stat-title" style="color: #34d399;">Telegram MTProto</div>
@@ -541,37 +541,37 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
       <div class="stat-desc">Fake-TLS: <strong>{html.escape(self.mtproto_domain or "google.com")}</strong></div>
     </div>
     <div class="stat-card">
-      <div class="stat-title">Балансировка</div>
+      <div class="stat-title">Load Balancing</div>
       <div class="stat-value">{self.agent_manager.strategy.upper()}</div>
-      <div class="stat-desc">{"Постоянная ротация (фоллбэк: 2 сек)" if self.agent_manager.strategy in ("rotation", "round_robin") else "Случайный выбор ноды"}</div>
+      <div class="stat-desc">{"Per-user rotation (2s failover)" if self.agent_manager.strategy in ("rotation", "round_robin") else "Случайный выбор ноды"}</div>
     </div>
   </div>
 
   <div class="card" style="border: 1px solid #10b981; background: linear-gradient(180deg, #1e293b 0%, rgba(16, 185, 129, 0.08) 100%);">
     <div class="card-title" style="color: #34d399;">
       <span>⚡ Telegram MTProto Proxy (Fake-TLS) — Клиенты ({len(mtproto_clients)})</span>
-      <span class="badge active" style="font-size:11px; padding:4px 8px;">ОБХОД БЛОКИРОВОК ТСПУ / РКН</span>
+      <span class="badge active" style="font-size:11px; padding:4px 8px;">DPI & FIREWALL BYPASS</span>
     </div>
     <p style="font-size: 13px; color: #94a3b8; margin-bottom: 14px; line-height: 1.5;">
-      Прокси маскирует весь трафик Telegram под официальное соединение HTTPS / TLS 1.3 к <code>{html.escape(self.mtproto_domain or "google.com")}</code>.
+      Proxy masquerades Telegram traffic as genuine HTTPS / TLS 1.3 to <code>{html.escape(self.mtproto_domain or "google.com")}</code>.
       Каждый клиент подключается по своему индивидуальному Secret Key. Все запросы выводятся в интернет через ваши <strong>Reverse Ноды</strong>.
     </p>
 
     <div style="background: #0f172a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-family: monospace; font-size: 13px; border: 1px solid #334155;">
-      <strong style="color:#e2e8f0;">Порт MTProto:</strong> <code style="color:#38bdf8;">{self.mtproto_port}</code> &nbsp;|&nbsp;
-      <strong style="color:#e2e8f0;">Маскировочный SNI:</strong> <code style="color:#38bdf8;">{html.escape(self.mtproto_domain or "google.com")}</code>
+      <strong style="color:#e2e8f0;">MTProto Port:</strong> <code style="color:#38bdf8;">{self.mtproto_port}</code> &nbsp;|&nbsp;
+      <strong style="color:#e2e8f0;">Masked SNI:</strong> <code style="color:#38bdf8;">{html.escape(self.mtproto_domain or "google.com")}</code>
     </div>
 
     <table>
       <thead>
         <tr>
-          <th>Клиент MTProto</th>
-          <th>Секретный ключ (Raw Hex)</th>
-          <th>Fake-TLS Secret (для Telegram)</th>
-          <th>Промо-тег (TAG @MTProxybot)</th>
-          <th>Текущая ротация</th>
-          <th>Дата создания</th>
-          <th>Действия</th>
+          <th>MTProto Client</th>
+          <th>Secret Key (Raw Hex)</th>
+          <th>Fake-TLS Secret (Telegram)</th>
+          <th>Promo TAG (@MTProxybot)</th>
+          <th>Current Rotation</th>
+          <th>Created</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -580,26 +580,26 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
     </table>
 
     <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #334155;">
-      <h3 style="font-size: 14px; margin-bottom: 10px; color: #cbd5e1;">Добавить нового клиента MTProto:</h3>
+      <h3 style="font-size: 14px; margin-bottom: 10px; color: #cbd5e1;">Add New MTProto Client:</h3>
       <form method="POST" action="/mtproto/add" class="form-inline" style="grid-template-columns: 1fr 1fr 1fr auto;">
         <div class="form-group">
-          <label for="mtproto_client_name">Имя клиента / устройства</label>
-          <input type="text" id="mtproto_client_name" name="client_name" placeholder="например, alex_phone" required>
+          <label for="mtproto_client_name">Client / Device Name</label>
+          <input type="text" id="mtproto_client_name" name="client_name" placeholder="e.g. alex_phone" required>
         </div>
         <div class="form-group">
-          <label for="mtproto_secret_key">Секретный ключ (32 hex или пусто)</label>
-          <input type="text" id="mtproto_secret_key" name="secret" placeholder="пусто для автогенерации">
+          <label for="mtproto_secret_key">Secret Key (32 hex or blank)</label>
+          <input type="text" id="mtproto_secret_key" name="secret" placeholder="leave blank for auto-generate">
         </div>
         <div class="form-group">
-          <label for="mtproto_tag_input">TAG из @MTProxybot (опционально)</label>
-          <input type="text" id="mtproto_tag_input" name="tag" placeholder="например, 96bd93d09a01f79d...">
+          <label for="mtproto_tag_input">TAG from @MTProxybot (optional)</label>
+          <input type="text" id="mtproto_tag_input" name="tag" placeholder="e.g. 96bd93d09a01f79d...">
         </div>
-        <button type="submit" class="btn-primary" style="background:#10b981;">+ Создать клиента</button>
+        <button type="submit" class="btn-primary" style="background:#10b981;">+ Create Client</button>
       </form>
     </div>
 
     <div class="help-box" style="margin-top: 16px;">
-      <strong>📢 Настройка промо-канала (Спонсор прокси):</strong><br>
+      <strong>📢 Sponsor Channel Configuration:</strong><br>
       • В поле <strong>Промо-тег (TAG)</strong> введите выданный ботом <strong>@MTProxybot</strong> 32-значный hex-тег (например: <code>96bd93d09a01f79d01c8d3e4cd5d5c26</code>) и нажмите <strong>💾</strong>.<br>
       • Промо-канал будет закреплён в самом верху чатов Telegram с отметкой <em>«Спонсор прокси»</em> для всех пользователей, подключенных через этот прокси.<br>
       • <strong>Двойной режим:</strong> Прокси на порту <code>{self.mtproto_port}</code> поддерживает подключение как по <strong>Fake-TLS</strong> (обход блокировок ТСПУ), так и по чистому <strong>Hex32</strong> (для ботов и стандартных клиентов).
@@ -618,25 +618,25 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
         var tgUrl = 'tg://proxy?server=' + hostIp + '&port=' + port + '&secret=' + secret;
         navigator.clipboard.writeText(tgUrl);
         var label = typeName ? ' (' + typeName + ')' : '';
-        alert('Ссылка для подключения в Telegram' + label + ' скопирована в буфер обмена!\\n\\n' + tgUrl);
+        alert('Telegram proxy connect link' + label + ' copied to clipboard!\\n\\n' + tgUrl);
       }}
     </script>
   </div>
 
   <div class="card">
     <div class="card-title">
-      <span>Подключенные Reverse Серверы ({len(agents)})</span>
-      <span style="font-size:12px; font-weight:normal; color:#94a3b8;">Обновляется автоматически</span>
+      <span>Connected Reverse Servers ({len(agents)})</span>
+      <span style="font-size:12px; font-weight:normal; color:#94a3b8;">Auto-refreshes in real time</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Нода (Agent ID)</th>
-          <th>Транспорт</th>
-          <th>Внешний IP / Адрес</th>
-          <th>Время работы</th>
-          <th>Активных соединений</th>
-          <th>Всего обработано</th>
+          <th>Node (Agent ID)</th>
+          <th>Transport</th>
+          <th>External IP / Address</th>
+          <th>Uptime</th>
+          <th>Active Connections</th>
+          <th>Total Relayed</th>
         </tr>
       </thead>
       <tbody>
@@ -647,16 +647,16 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
   <div class="card">
     <div class="card-title">
-      <span>Пользователи SOCKS5 ({len(users)})</span>
+      <span>SOCKS5 Users ({len(users)})</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Логин</th>
-          <th>Пароль</th>
-          <th>Текущая ротация</th>
-          <th>Дата добавления</th>
-          <th>Действие</th>
+          <th>Username</th>
+          <th>Password</th>
+          <th>Current Rotation</th>
+          <th>Added</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -665,22 +665,22 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
     </table>
 
     <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #334155;">
-      <h3 style="font-size: 15px; margin-bottom: 12px; color: #cbd5e1;">Добавить нового пользователя SOCKS5:</h3>
+      <h3 style="font-size: 15px; margin-bottom: 12px; color: #cbd5e1;">Add New SOCKS5 User:</h3>
       <form method="POST" action="/users/add" class="form-inline">
         <div class="form-group">
-          <label for="new_username">Логин пользователя</label>
-          <input type="text" id="new_username" name="username" placeholder="например, client1" required>
+          <label for="new_username">Username</label>
+          <input type="text" id="new_username" name="username" placeholder="e.g. client1" required>
         </div>
         <div class="form-group">
-          <label for="new_password">Пароль</label>
-          <input type="text" id="new_password" name="password" placeholder="например, pass12345" required>
+          <label for="new_password">Password</label>
+          <input type="text" id="new_password" name="password" placeholder="e.g. pass12345" required>
         </div>
-        <button type="submit" class="btn-primary">+ Добавить пользователя</button>
+        <button type="submit" class="btn-primary">+ Add User</button>
       </form>
     </div>
 
     <div class="help-box">
-      <strong>Универсальный прокси (порт {self.socks5_port}):</strong><br>
+      <strong>Universal Multi-Protocol Proxy (порт {self.socks5_port}):</strong><br>
       • <strong>SOCKS5 (TCP + UDP):</strong> поддерживает TCP (CONNECT), UDP (UDP ASSOCIATE для звонков Telegram, DNS, игр, WebRTC, QUIC), и TCP BIND.<br>
       • <strong>SOCKS4 / SOCKS4a:</strong> <code>curl --socks4a ЛОГИН@IP:{self.socks5_port} http://...</code><br>
       • <strong>HTTP / HTTPS Proxy:</strong> <code>curl -x http://ЛОГИН:ПАРОЛЬ@IP:{self.socks5_port} https://...</code> (CONNECT и обычный HTTP proxy).<br>
@@ -716,7 +716,7 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
     async def _route_add_mtproto_client(self, writer: asyncio.StreamWriter, body: bytes):
         if not self.mtproto_user_manager:
-            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto менеджер не настроен"))
+            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto manager is not configured"))
             return
         form_data = urllib.parse.parse_qs(body.decode("utf-8", errors="ignore"))
         client_name = form_data.get("client_name", [""])[0].strip()
@@ -731,7 +731,7 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
     async def _route_set_mtproto_tag(self, writer: asyncio.StreamWriter, body: bytes):
         if not self.mtproto_user_manager:
-            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto менеджер не настроен"))
+            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto manager is not configured"))
             return
         form_data = urllib.parse.parse_qs(body.decode("utf-8", errors="ignore"))
         client_name = form_data.get("client_name", [""])[0].strip()
@@ -745,7 +745,7 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
     async def _route_delete_mtproto_client(self, writer: asyncio.StreamWriter, body: bytes):
         if not self.mtproto_user_manager:
-            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto менеджер не настроен"))
+            self._send_redirect(writer, "/?error=" + urllib.parse.quote("MTProto manager is not configured"))
             return
         form_data = urllib.parse.parse_qs(body.decode("utf-8", errors="ignore"))
         client_name = form_data.get("client_name", [""])[0].strip()
@@ -816,9 +816,9 @@ code {{ font-family: monospace; background: #0f172a; padding: 3px 6px; border-ra
 
     def _format_duration(self, seconds: int) -> str:
         if seconds < 60:
-            return f"{seconds}с"
+            return f"{seconds}s"
         minutes = seconds // 60
         if minutes < 60:
-            return f"{minutes}м {seconds % 60}с"
+            return f"{minutes}m {seconds % 60}s"
         hours = minutes // 60
-        return f"{hours}ч {minutes % 60}м"
+        return f"{hours}h {minutes % 60}m"

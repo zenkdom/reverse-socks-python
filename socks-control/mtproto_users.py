@@ -160,11 +160,11 @@ class MtprotoUserManager:
         """
         client_name = client_name.strip()
         if not client_name:
-            return False, "Имя клиента MTProto не может быть пустым", None
+            return False, "MTProto client name cannot be empty", None
 
         # Disallow problematic characters
         if not re.match(r"^[a-zA-Z0-9_\-\.]+$", client_name):
-            return False, "Имя клиента может содержать только латинские буквы, цифры, дефис и подчеркивание", None
+            return False, "Client name can only contain alphanumeric characters, hyphens, dots, and underscores", None
 
         dom = (domain or self.default_domain).strip().lower()
         raw_hex, dom, fake_tls = normalize_hex_secret(secret or "", dom)
@@ -174,16 +174,16 @@ class MtprotoUserManager:
         if tag and tag.strip():
             tag_clean = normalize_tag(tag)
             if not tag_clean:
-                return False, "Тег промо-канала должен содержать ровно 32 hex-символа (16 байт) из @MTProxybot", None
+                return False, "Promo channel TAG must be exactly 32 hex characters from @MTProxybot", None
 
         async with self._lock:
             if client_name in self.clients:
-                return False, f"MTProto клиент с именем '{client_name}' уже существует", None
+                return False, f"MTProto client '{client_name}' already exists", None
 
             # Check if secret already used by another client
             for c in self.clients.values():
                 if c.get("secret") == raw_hex:
-                    return False, f"Такой секретный ключ уже используется клиентом '{c['client_name']}'", None
+                    return False, f"Secret key is already used by client '{c['client_name']}'", None
 
             new_client = {
                 "client_name": client_name,
@@ -196,7 +196,7 @@ class MtprotoUserManager:
             self.clients[client_name] = new_client
             self.save_sync()
             logger.info(f"Added MTProto client '{client_name}' (Fake-TLS: {fake_tls[:15]}..., TAG: {tag_clean})")
-            return True, f"MTProto клиент '{client_name}' успешно создан!", new_client
+            return True, f"MTProto client '{client_name}' created successfully!", new_client
 
     async def update_client_tag(self, client_name: str, tag: Optional[str]) -> tuple[bool, str]:
         """Update or clear promo TAG for an existing MTProto client configuration."""
@@ -206,15 +206,15 @@ class MtprotoUserManager:
         if tag_str:
             tag_clean = normalize_tag(tag_str)
             if not tag_clean:
-                return False, "Неверный формат: тег должен содержать ровно 32 hex-символа (выдаётся @MTProxybot)"
+                return False, "Invalid format: TAG must be exactly 32 hex characters (from @MTProxybot)"
 
         async with self._lock:
             if client_name not in self.clients:
-                return False, f"Конфигурация клиента MTProto '{client_name}' не найдена"
+                return False, f"MTProto client configuration for '{client_name}' not found"
 
             self.clients[client_name]["tag"] = tag_clean
             self.save_sync()
-            msg = f"Тег промо-канала для '{client_name}' успешно сохранен!" if tag_clean else f"Тег промо-канала для '{client_name}' удален"
+            msg = f"Promo TAG for '{client_name}' saved successfully!" if tag_clean else f"Promo TAG for '{client_name}' removed"
             logger.info(f"Updated TAG for MTProto client '{client_name}': {tag_clean}")
             return True, msg
 
@@ -234,15 +234,15 @@ class MtprotoUserManager:
         client_name = client_name.strip()
         async with self._lock:
             if client_name not in self.clients:
-                return False, f"MTProto клиент '{client_name}' не найден"
+                return False, f"MTProto client '{client_name}' not found"
 
             if len(self.clients) <= 1:
-                return False, "Нельзя удалить последнего клиента MTProto (должен оставаться хотя бы один активный ключ)"
+                return False, "Cannot delete the last MTProto client (at least one active key must remain)"
 
             del self.clients[client_name]
             self.save_sync()
             logger.info(f"Deleted MTProto client '{client_name}'")
-            return True, f"MTProto клиент '{client_name}' успешно удален"
+            return True, f"MTProto client '{client_name}' deleted successfully"
 
     def get_all_clients(self) -> list[dict]:
         """Return list of all registered MTProto clients."""

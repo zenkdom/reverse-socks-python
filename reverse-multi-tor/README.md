@@ -1,133 +1,83 @@
-# Multi-Tor Reverse Cluster (10 независимых IP-узлов)
+# Multi-Tor Reverse Cluster (10 Isolated Exit Nodes)
 
 > [!WARNING]
-> ⚠️ **Важно о скорости сети Tor и стабильности:**  
-> Маршрутизация через сеть Tor добавляет высокие задержки (ping 300–800ms) и низкую пропускную способность. Для быстрой и комфортной работы (просмотр видео, звонки в Telegram, WebRTC, загрузка файлов) **гораздо эффективнее использовать собственные VPS/серверы** с обычным агентом `socks-reverse`.  
-> Размер кластера по умолчанию оптимизирован до **10 нод** для обеспечения надежной работы и стабильности асинхронного цикла событий в Python (запуск 50 нод на одном процессе в Python приводит к перегрузке селектора сокетов).
+> ⚠️ **Notice Regarding Tor Network Latency & Speed:**  
+> Routing traffic through the Tor network introduces substantial latency (300–800ms ping) and limited bandwidth. For high-throughput use cases (streaming video, Telegram VoIP, WebRTC, downloading large files), **we strongly recommend deploying standard `socks-reverse` agents on your own VPS servers**.  
+> The cluster is optimized to **10 nodes** to ensure rock-solid stability in Python asyncio.
 
-Кластер из **10 виртуальных reverse-нод** на базе сети **Tor**, работающий на одном сервере (или отдельно) и подключающийся к основному серверу `socks-control` (`IP_CONTROL_СЕРВЕРА:9000`).
+A pool of **10 virtual reverse exit nodes** running on top of an isolated **Tor** daemon, connecting back to the primary `socks-control` server.
 
 ---
 
-## 🏗 Архитектура
+## 🏗 Architecture
 
 ```
                              +---------------------------------------+
-                             |           ВЕБ-АДМИНИСТРАТОР           |
-                             |      http://IP_CONTROL:9001            |
-                             |       (Видно 10 зеленых нод!)         |
+                             |           WEB ADMINISTRATOR           |
+                             |       http://CONTROL_IP:9001          |
+                             |       (Shows 10 active nodes)         |
                              +-------------------+-------------------+
                                                  |
 +---------------------------------------+        |
-|             КЛИЕНТЫ                   |        |
-|   (SOCKS5 :1080 / MTProto :8443)      |        |
+|                CLIENTS                |        |
+|    (SOCKS5 :1080 / MTProto :8443)     |        |
 +-------------------+-------------------+        |
-                    | Ротация по кругу          v
+                    | Round-robin per user       v
                     +------------------->+-------------------------------+
                                          |         socks-control         |
-                                         |      (порт bridge: 9000)      |
+                                         |      (Bridge Port: 9000)      |
                                          +---------------+---------------+
                                                          ▲
-     10 независимых постоянных соединений                │
+     10 independent persistent tunnels                   │
   ┌──────────────────────────────────────────────────────┴────────────────────────────────────────┐
   │                                                                                               │
 +─┴───────────────────+             +─────────────────────+             +─────────────────────+   │
 |     tor-node-01     |             |     tor-node-02     |             |     tor-node-10     |   │
-|  (Reverse Агент #1) |             |  (Reverse Агент #2) |             |  (Reverse Агент #10)|   │
+|  (Reverse Agent #1) |             |  (Reverse Agent #2) |             |  (Reverse Agent #10)|   │
 +----------+----------+             +----------+----------+             +----------+----------+   │
            │                                   │                                   │              │
-           v (порт 9050)                       v (порт 9051)                       v (порт 9059)  │
+           v (Port 9050)                       v (Port 9051)                       v (Port 9059)  │
 ┌──────────┴───────────────────────────────────┴───────────────────────────────────┴──────────┐   │
-│                             Локальный Multi-Port Tor Daemon                                  │   │
-│             10 изолированных портов со Stream Isolation (IsolateDestAddr / Port)             │   │
+│                             Local Multi-Port Tor Daemon                                      │   │
+│             10 Isolated SOCKS Ports with Stream Isolation (IsolateDestAddr / Port)           │   │
 └──────────┬───────────────────────────────────┬───────────────────────────────────┬──────────┘   │
            │                                   │                                   │              │
            v                                   v                                   v              │
-  [Tor Exit: Германия]                [Tor Exit: США]                     [Tor Exit: Франция]     │
-   IP: 185.220.101.5                   IP: 198.51.100.23                   IP: 51.15.42.88        │
+    [Tor Exit Node]                     [Tor Exit Node]                     [Tor Exit Node]       │
 ```
 
 ---
 
-## 🚀 Быстрый запуск на Ubuntu
+## 🚀 Quick Start on Linux / Ubuntu
 
-### Шаг 1. Перейдите в папку
+### Step 1. Navigate to directory
 ```bash
-cd /opt/reverse-multi-tor   # или cd reverse-multi-tor
+cd reverse-multi-tor
 ```
 
-### Шаг 2. Запустите кластер
-Скрипт сам проверит и установит `tor` через `apt`, сгенерирует конфиг на 10 портов и запустит демона и агентов:
+### Step 2. Start the cluster
+The automated script verifies Tor installation, generates a 10-port isolated configuration, restarts the daemon, and registers all 10 reverse agents:
 ```bash
 chmod +x start_tor.sh start_cluster.sh
 ./start_cluster.sh
 ```
 
-В консоли отобразится:
-```text
-======================================================================
-      MULTI-TOR REVERSE CLUSTER: 10 VIRTUAL NODES
-      Target Control Server: IP_CONTROL_СЕРВЕРА:9000
-      Tor SOCKS Ports: 127.0.0.1:9050 .. 9059
-======================================================================
-[OK] tor-node-01 Connected to Control & Registered! (Tor Port: 9050)
-[OK] tor-node-02 Connected to Control & Registered! (Tor Port: 9051)
-...
-[OK] tor-node-10 Connected to Control & Registered! (Tor Port: 9059)
-[+] All 10 Tor Reverse Agents launched! Connecting to IP_CONTROL_СЕРВЕРА:9000...
-```
+---
 
-### Шаг 3. Проверьте результат в веб-админке
-Откройте в браузере: `http://IP_CONTROL_СЕРВЕРА:9001`
-- В таблице **Reverse-нод** появятся **10 активных нод**: `tor-node-01` ... `tor-node-10`.
-- В столбце **«Внешний IP / Адрес»** для каждой ноды будет отображаться её **подтвержденный уникальный выходной IP-адрес** (зеленая плашка `✓ Выходной IP`).
-- При подключении через SOCKS5 (`порт 1080`) или MTProto (`порт 8443`) каждый запрос автоматически перенаправляется на следующий Tor-узел с новым IP-адресом.
+## 🛡️ Circuit Isolation (IsolateSOCKSAuth)
+
+To ensure each virtual node receives a distinct circuit and external IP address:
+1. **Tor Stream Isolation (`IsolateSOCKSAuth`):** Each agent provides a unique session token to Tor on connect.
+2. **Automated Registration:** Each node tests its external IP address and registers with the master control server.
 
 ---
 
-## 🛡️ Гарантия Уникальности IP-адресов (IsolateSOCKSAuth)
-
-По умолчанию один процесс Tor может повторно использовать 3–5 открытых цепочек для разных портов. Чтобы **гарантировать 100% уникальный IP на каждой ноде**:
-
-1. **Изоляция цепочек (Tor IsolateSOCKSAuth):**
-   Каждый агент передает Tor свой уникальный сессионный токен аутентификации SOCKS5 (`tor-node-01_XXXX`). По спецификации Tor, соединения с разными именами пользователя **никогда не используют одну и ту же цепочку**.
-2. **Автоматическая проверка уникальности при старте (Unique IP Registry):**
-   При запуске каждый агент делает тестовый запрос своего выходного IP через Tor и сверяет его с глобальным реестром кластера.
-   - Если полученный IP уже занят другой нодой — агент мгновенно перестраивает маршрут Tor (ротирует сессию), пока не получит **гарантированно уникальный IP**.
-   - Только после подтверждения уникальности нода регистрируется на сервере `socks-control` и начинает обслуживать трафик.
-
-## 🔄 Мгновенная смена всех 50 IP-адресов
-
-Чтобы принудительно обновить цепочки Tor и сменить IP-адреса на всех 50 узлах:
-```bash
-python3 rotate_ips.py
-```
-Скрипт отправляет сигнал `SIGNAL NEWNYM` в порт управления Tor (`ControlPort 9049`), и Tor перестраивает маршруты с новыми выходными нодами со всего мира.
-
----
-
-## ⚙️ Запуск как фоновая служба (Systemd)
-
-Чтобы кластер автоматически стартовал при перезагрузке сервера:
-
-```bash
-sudo cp -r reverse-multi-tor /opt/reverse-multi-tor
-sudo cp /opt/reverse-multi-tor/reverse-multi-tor.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now reverse-multi-tor
-
-# Просмотр логов:
-sudo journalctl -u reverse-multi-tor -f
-```
-
----
-
-## 🛠 Конфигурация (`config.json`)
+## 🛠 Configuration (`config.json`)
 
 ```json
 {
   "control_server": {
-    "host": "YOUR_CONTROL_SERVER_IP",
+    "host": "127.0.0.1",
     "port": 9000,
     "secret_token": "SecretProxyToken2026!"
   },
@@ -148,7 +98,6 @@ sudo journalctl -u reverse-multi-tor -f
 
 ---
 
-## 📊 Потребление ресурсов
-- **ОЗУ (RAM):** Единый Tor-демон с 10 изолированными портами и Python-асинхронный воркер потребляют суммарно всего **~40–60 МБ RAM**.
-- **Процессор (CPU):** < 1% в режиме простоя.
-- **Исходящий трафик:** 100% бесплатно через сеть Tor (низкая скорость из-за специфики onion-маршрутизации).
+## 📊 Resource Usage
+- **Memory (RAM):** The Tor daemon with 10 ports + Python async worker consume only **~40–60 MB RAM**.
+- **CPU:** < 1% at idle.

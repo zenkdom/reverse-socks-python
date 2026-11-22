@@ -199,7 +199,7 @@ async def main():
         for aid, ip in summary:
             print(f"  * {aid:14s} -> Exit IP: {ip}")
         print("-" * 70)
-        print(f"Всего проверено уникальных IP: {unique_cnt} из {len(agents)}")
+        print(f"Total verified unique exit IPs: {unique_cnt} out of {len(agents)}")
         print("=" * 70 + "\n")
 
     # Launch all agents

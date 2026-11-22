@@ -6,318 +6,228 @@
 [![Telegram Fake-TLS 1.3](https://img.shields.io/badge/Telegram-MTProto%20Fake--TLS-blue.svg)](https://telegram.org)
 
 > [!IMPORTANT]
-> 🚀 **Высокая нагрузка и максимальная стабильность:**  
-> Для высоконагруженных продакшн-серверов и максимальной скорости передачи данных рекомендуется использовать **[Go-версию Reverse SOCKS Cluster](https://github.com/zenkdom/reverse-socks-go)**.  
+> 🚀 **High Load & Maximum Stability Notice:**  
+> For production environments, multi-gigabit throughput, and high concurrency, we strongly recommend using the **[Go Version of Reverse SOCKS Cluster](https://github.com/zenkdom/reverse-socks-go)**.  
 > 
-> 🔄 **100% Кроссплатформенная совместимость протокола:**  
-> Обе версии (Python и Go) используют единый бинарный протокол мультиплексирования. Исполняющий агент на Python (`socks-reverse`) может подключаться к Control-серверу на Go, а агент на Go — к Control-серверу на Python!
+> 🔄 **100% Cross-Compatible Protocol:**  
+> Both Python and Go implementations share the exact same binary multiplexing wire protocol. Any Python reverse agent (`socks-reverse`) can connect to a Go control server, and any Go reverse agent can connect to a Python control server!
 
-Высокопроизводительная система обратного прокси-кластера на Python (`asyncio`):
-- **Универсальный Multi-Protocol прокси** (порт `1080`):
-  - **SOCKS5 с поддержкой TCP и UDP**: команды `CONNECT` (0x01), `BIND` (0x02), и `UDP ASSOCIATE` (0x03) по RFC 1928 / RFC 1929. Полная поддержка звонков Telegram, голосовых чатов, WebRTC, DNS, онлайн-игр и QUIC/HTTP3.
-  - **SOCKS4 и SOCKS4a**: поддержка классических клиентов и удаленного резолва доменов.
-  - **HTTP & HTTPS (CONNECT) Proxy**: поддержка туннелирования HTTPS-трафика и прямого HTTP-проксирования с Proxy-Authorization Basic.
-  - Автоматическое определение протокола на лету на едином порту 1080.
-- **MTProto Fake-TLS прокси** (порт `8443`) для Telegram в обход блокировок ТСПУ / РКН.
-- **Встроенная веб-админка** (порт `9001`) для управления пользователями и мониторинга нод.
-- **Пул исполняющих серверов (`socks-reverse`)** для вывода трафика в интернет с рандомной балансировкой и failover.
+A high-performance reverse proxy cluster built with Python (`asyncio`):
+- **Universal Multi-Protocol Listener** (Port `1080`):
+  - **SOCKS5 with full TCP & UDP support**: commands `CONNECT` (0x01), `BIND` (0x02), and `UDP ASSOCIATE` (0x03) per RFC 1928 / RFC 1929. Supports Telegram VoIP calls, WebRTC, DNS, gaming, and QUIC/HTTP3.
+  - **SOCKS4 & SOCKS4a**: support for legacy applications and remote domain resolution.
+  - **HTTP & HTTPS (CONNECT) Proxy**: tunneling for HTTPS traffic and direct HTTP forward-proxying with Basic authentication.
+  - Automatic on-the-fly protocol detection on a single unified port `1080`.
+- **Telegram MTProto Proxy with Fake-TLS 1.3** (Port `8443`):
+  - Circumvents strict DPI / firewall filtering by masquerading as TLS 1.3 traffic to legitimate domains (e.g. `google.com`).
+  - Active probe defense: unauthorized scanner probes are routed to the real Google servers, returning valid certificates.
+- **Built-in Web Administration UI** (Port `9001`):
+  - Manage SOCKS5 and MTProto credentials with real-time node health monitoring.
+  - 1-click `tg://proxy` connect links and clipboard export.
+- **Reverse Exit Node Pool (`socks-reverse`)**:
+  - Outbound nodes connect back to the control server, punching through NATs, firewalls, and CGNAT without public IPs.
+  - Independent round-robin rotation per user and automatic 2-second failover.
 
 ---
 
-## 🏗 Архитектура
+## 🏗 Architecture
 
 ```
                              +---------------------------------------+
-                             |           ВЕБ-АДМИНИСТРАТОР           |
-                             |      http://IP_CONTROL:9001           |
-                             |       Логин: admin / changeme123      |
+                             |           WEB ADMINISTRATOR           |
+                             |       http://CONTROL_IP:9001          |
+                             |       Default: admin / changeme123    |
                              +-------------------+-------------------+
                                                  |
-                                                 | 1-клик подключение в Telegram /
-                                                 | Управление пользователями SOCKS5
+                                                 | 1-Click Telegram Setup /
+                                                 | SOCKS5 User Management
                                                  v
 +---------------------------------------+   +---------------------------------------+
-|             КЛИЕНТЫ                   |   |             socks-control             |
-|   (Браузер, curl, v2rayNG и т.д.)     |   |     (Основной сервер на Ubuntu)       |
+|                CLIENTS                |   |             socks-control             |
+|    (Browser, curl, Telegram, apps)    |   |           (Master Server)             |
 +-------------------+-------------------+   |                                       |
-                    | SOCKS5 с логином      |   * Порт 1080: SOCKS5 (СТРОГО AUTH)   |
-                    +---------------------->|   * Порт 8443: MTProto Fake-TLS (TG)  |
-                                            |   * Порт 9000: Порт для reverse-нод   |
-+---------------------------------------+   |   * Порт 9001: Веб-админка            |
-|            TELEGRAM КЛИЕНТ            |   |   * Балансировщик: ROTATION (ротация) |
-|       (Windows, Android, iOS)         |   +-------------------+-------------------+
+                    | SOCKS5 / HTTP (Auth)  |   * Port 1080: SOCKS5/4/HTTP Proxy    |
+                    +---------------------->|   * Port 8443: MTProto Fake-TLS (TG)  |
+                                            |   * Port 9000: Reverse Agent Bridge   |
++---------------------------------------+   |   * Port 9001: Web Admin Panel        |
+|            TELEGRAM CLIENT            |   |   * Balancer: Per-User Rotation       |
+|        (iOS, Android, Desktop)        |   +-------------------+-------------------+
 +-------------------+-------------------+                       ^
                     | MTProto Fake-TLS (8443)                           |
-                    | (маскировка под google.com)                       |
+                    | (Masquerading as google.com)                      |
                     +---------------------------------------------------+
                                                                         |
-                                               Исходящие туннели        |
+                                                Outbound Tunnels        |
                                 +---------------------------------------+---------------------------------------+
                                 |                                                                               |
-                                | Порт 9000                                                             | Порт 9000
+                                | Port 9000                                                             | Port 9000
                                 v                                                                               v
                    +-------------------------+                                                     +-------------------------+
                    |      socks-reverse      |                                                     |      socks-reverse      |
-                   |    (Исполняющий #1)     |                                                     |    (Исполняющий #2)     |
-                   |     reverse-node-1      |                                                     |     reverse-node-2      |
+                   |      (Exit Node #1)     |                                                     |      (Exit Node #2)     |
+                   |      reverse-node-1     |                                                     |      reverse-node-2     |
                    +------------+------------+                                                     +------------+------------+
                                 |                                                                               |
-                                | Выход в интернет                                                              | Выход в интернет
+                                | Direct Internet Access                                                        | Direct Internet Access
                                 v                                                                               v
                    +-------------------------+                                                     +-------------------------+
-                   |    Интернет / Сайты     |                                                     |    Telegram DC (443)    |
-                   |     (IP первой ноды)    |                                                     |    (IP второй ноды)     |
+                   |    Target Websites      |                                                     |   Telegram DataCenters  |
+                   |      (Node #1 IP)       |                                                     |       (Node #2 IP)      |
                    +-------------------------+                                                     +-------------------------+
 ```
 
 ---
 
-## ⚡ Почему SOCKS5 в Telegram вечно писал «Connecting», а MTProto работает?
+## ⚡ Why SOCKS5 Fails on Strict Firewalls While MTProto Fake-TLS Works
 
-1. **Проблема SOCKS5 в Telegram:**
-   - Протокол SOCKS5 при подключении к Telegram передает открытую команду: `CONNECT 149.154.167.51:443`.
-   - Российские ТСПУ (DPI) в режиме реального времени видят IP-адреса дата-центров Telegram (`149.154.x.x`, `91.108.x.x`) и сразу сбрасывают TCP-соединение пакетом `TCP RST`. Из-за этого Telegram в логах постоянно писал `user admin authenticated`, но подключиться не мог.
-2. **Решение — MTProto Proxy с Fake-TLS (`ee...`):**
-   - MTProto на порту `8443` упаковывает трафик в **Fake-TLS 1.3**.
-   - Для ТСПУ это выглядит как абсолютно легитимный защищенный HTTPS-сеанс к `google.com` (SNI: `google.com`). ТСПУ не может расшифровать или заблокировать его.
-   - Сервер `socks-control` распаковывает Fake-TLS и передает чистые запросы через ваши исполняющие серверы `socks-reverse`, которые за границей или вне блокировок обращаются к Telegram DC на порт `443`.
-
----
-
-## 🔑 Ключевые возможности
-
-1. **MTProto Dual-Mode (Fake-TLS + Hex32) в `socks-control` на порту `8443`**:
-   - Автоматически определяет формат подключения клиента (Fake-TLS или прямой 32-hex Obfuscated2).
-   - **Fake-TLS (`ee...`):** трафик маскируется под TLS 1.3 к `google.com` для обхода ТСПУ / DPI в РФ.
-   - **Hex32 (классический 32-hex):** прямой MTProto-секрет для регистрации в `@MTProxybot` (спонсорские каналы) и совместимости с клиентами без Fake-TLS.
-   - **Поддержка Промо-каналов (TAG):** привязка MTProto Tag (полученного от `@MTProxybot`) к клиентам прямо из веб-админки.
-   - Защита от активных зондов ТСПУ: при сканировании порта прокси перенаправляет зонд на реальный сервер Google, возвращая валидный TLS-сертификат Google.
-2. **Встроенная Web-Админка на порту `9001`**:
-   - Вход: **Логин:** `admin`, **Пароль:** `changeme123`.
-   - **Управление клиентами MTProto:**
-     - Создание клиентов Telegram с индивидуальными Secret Key (32 hex символа или автогенерация безопасного ключа в 1 клик).
-     - Поле **Promo TAG** в таблице клиентов с кнопкой мгновенного сохранения `💾` для продвижения спонсорского канала.
-     - Кнопки **«🚀 Fake-TLS»** и **«🚀 Hex32»** — мгновенное подключение в Telegram в выбранном режиме.
-     - Кнопки **«📋 Fake-TLS»** и **«📋 Hex32»** — копирование ссылок `tg://proxy?...` в буфер обмена.
-     - Удаление клиентов с мгновенным отзывом доступа.
-     - Данные сохраняются в `mtproto_users.json`.
-   - **Управление пользователями SOCKS5:**
-     - Добавление и удаление клиентов SOCKS5 (логин/пароль) с сохранением в `users.json`.
-   - **Мониторинг Reverse-нод:**
-     - Таблица подключенных серверов `socks-reverse` со статусом, типом транспорта (`🔒 Fake-TLS (<sni>)` или `PLAIN TCP`), статистикой аптайма и обработанных пакетов в реальном времени.
-3. **Поддержка всех сетевых протоколов (TCP, UDP, SOCKS4/5, HTTP/HTTPS)** на порту `1080`:
-   - **TCP & UDP:** полная поддержка потокового TCP (`CONNECT`) и дейтаграммного UDP (`UDP ASSOCIATE` RFC 1928 Section 7). Трафик UDP передается через туннель исполняющих серверов `socks-reverse` с поддержкой DNS, WebRTC, VoIP (звонки в Telegram работают идеально!), онлайн-игр и QUIC/HTTP3.
-   - **SOCKS5 TCP BIND:** поддержка входящих TCP-соединений (команда `0x02`).
-   - **SOCKS4 и SOCKS4a:** полная совместимость с программами и утилитами, поддерживающими только SOCKS4/4a.
-   - **HTTP & HTTPS Proxy:** поддержка HTTP CONNECT туннелирования для HTTPS-трафика и прямого HTTP forward-проксирования.
-   - **Строгая аутентификация:** запросы без логина и пароля или с неверными данными строго отклоняются (SOCKS5 0xFF, SOCKS4 0x5B, HTTP 407).
-4. **Dual-Mode Fake-TLS и HTTP CONNECT для Reverse-нод (PythonAnywhere Free Tier)**:
-   - Подключение reverse-ноды может осуществляться как по обычному прямому TCP, так и с оберткой в **Fake-TLS 1.3** с произвольным SNI (`google.com`, `api.telegram.org` и т.д.).
-   - Поддержка туннелирования через HTTP-прокси (`CONNECT proxy.server:3128`) для работы на изолированных бесплатных хостингах вроде **PythonAnywhere Free Tier**.
-5. **Постоянная ротация индивидуально для каждого клиента (Per-User Rotation & Failover)**:
-   - Ротация ведется **персонально для каждого пользователя** по его `login` (SOCKS5) или `secret/клиенту` (MTProto), а не глобально на весь сервер.
-   - Запросы конкретного пользователя гарантированно чередуются между нодами (запрос 1 -> нода A, запрос 2 -> нода B, запрос 3 -> нода A...), независимо от активности других клиентов в этот же момент.
-   - Если очередная выбранная нода не отвечает или не может подключиться к цели в течение **2.0 секунд**, сервер прозрачно переключает запрос на резервную/предыдущую ноду без обрыва соединения для клиента.
-6. **Multi-Tor Cluster (
-everse-multi-tor) на 10 независимых нод**:
-   - Параллельный запуск 10 reverse-агентов через единый Tor-демон со stream-изоляцией портов 9050..9059.
-   - Гарантия 100% уникального внешнего IP через IsolateSOCKSAuth.
-   - ⚠️ *Важное примечание по скорости:* сеть Tor дает высокий пинг (300–800ms) и низкую скорость. Для максимальной стабильности, звонков, просмотра видео и повседневной работы **гораздо эффективнее использовать собственные серверы/VPS** с обычным агентом socks-reverse. В кластере по умолчанию настроено 10 нод, так как одновременный запуск 50 Tor-нод на одном процессе в Python перегружает асинхронный селектор сокетов.
+1. **The Issue with Plain SOCKS5:**
+   - Standard SOCKS5 transmits the target connection in cleartext: `CONNECT 149.154.167.51:443`.
+   - Modern Deep Packet Inspection (DPI) systems immediately detect Telegram IP blocks (`149.154.x.x`, `91.108.x.x`) and drop the connection with TCP RST packets. Clients get stuck on "Connecting...".
+2. **The MTProto Fake-TLS Solution:**
+   - The MTProto server encapsulates traffic inside a legitimate TLS 1.3 ClientHello session with SNI `google.com`.
+   - To firewalls and DPI engines, the connection looks identical to standard HTTPS browsing to Google.
+   - The master control server strips the Fake-TLS envelope and relays clean data through outbound reverse nodes located in open networks.
 
 ---
 
-## 📁 Структура проекта
+## 🔑 Key Features
+
+1. **Dual-Mode MTProto (Fake-TLS + Hex32) on Port `8443`**:
+   - Automatically detects client handshake format: Fake-TLS (`ee...`) or standard 32-hex Obfuscated2.
+   - Masquerades as TLS 1.3 to avoid SNI filtering.
+   - Sponsor channel support: attach Promo TAGs from `@MTProxybot` directly via the web UI.
+   - Active probe protection: unauthorized probes are forwarded to genuine Google endpoints.
+2. **Web Administration Dashboard on Port `9001`**:
+   - Default login: `admin` / `changeme123`.
+   - Create and revoke MTProto secret keys and SOCKS5 user credentials.
+   - Live monitor for connected reverse nodes (status, Fake-TLS encapsulation, uptime, packet counters).
+3. **Multi-Protocol Handler on Port `1080`**:
+   - **TCP & UDP**: Stream TCP (`CONNECT`), incoming TCP (`BIND`), and datagram UDP (`UDP ASSOCIATE`). Fully compatible with Telegram VoIP calls, DNS lookups, WebRTC, and QUIC.
+   - **SOCKS4 & SOCKS4a**: Legacy software support with remote domain resolution.
+   - **HTTP CONNECT Tunneling**: Forward-proxy support for HTTPS and HTTP web traffic.
+   - **Strict Authentication**: SOCKS5 user/pass (RFC 1929), SOCKS4 username validation, and HTTP `Proxy-Authorization: Basic`.
+4. **NAT Traversal & Reverse Node Tunneling**:
+   - Outbound nodes connect back to master server on port `9000`. Nodes can run behind NAT, firewalls, mobile connections, or restricted free tiers (such as PythonAnywhere).
+   - Optional upstream HTTP proxy support (`CONNECT proxy:3128`) and Fake-TLS wrapping between nodes and control server.
+5. **Per-User Rotation & Fast Failover**:
+   - Balancing is calculated **independently per user**, ensuring equitable exit distribution.
+   - Automatic 2-second failover: if an exit node fails to reach the destination, the request immediately redirects to a healthy backup node.
+6. **Multi-Tor Cluster (`reverse-multi-tor`)**:
+   - Orchestrates 10 isolated reverse agents through a local Tor daemon with `IsolateSOCKSAuth`.
+   - ⚠️ *Note on Tor latency:* Tor onion routing introduces significant latency (300–800ms ping). For streaming, gaming, and VoIP, **we strongly recommend using your own VPS servers** with standard `socks-reverse` agents.
+
+---
+
+## 📁 Repository Structure
 
 ```text
-reverse socks/
-├── socks-control/               # Основной сервер (Ubuntu VPS)
-│   ├── config.json              # Конфигурация (порты 1080, 8443, 9000, 9001)
-│   ├── users.json               # База пользователей SOCKS5
-│   ├── socks_users.py           # Модуль пользователей SOCKS5
-│   ├── mtproto_users.json       # База клиентов MTProto с Secret Keys
-│   ├── mtproto_users.py         # Модуль управления клиентами MTProto
-│   ├── admin_web.py             # Веб-админка на порту 9001 с 1-клик ссылками
-│   ├── mtproto.py               # MTProto Fake-TLS сервер (порт 8443)
-│   ├── socks5.py                # SOCKS5-сервер со строгой авторизацией
-│   ├── agent_manager.py         # Пул reverse-агентов и балансировщик
-│   ├── protocol.py              # Бинарный протокол мультиплексирования
-│   ├── server.py                # Главный сервер (SOCKS5 + MTProto + Bridge + Web)
-│   ├── requirements.txt         # Зависимости (cryptography)
-│   ├── start.sh / start.bat     # Скрипты быстрого запуска
-│   └── socks-control.service    # Systemd-юнит для автозапуска
+reverse-socks-python/
+├── socks-control/               # Master Control Server
+│   ├── config.example.json      # Configuration template
+│   ├── server.py                # Main server entrypoint
+│   ├── admin_web.py             # Web Admin UI
+│   ├── socks5.py                # Multi-protocol SOCKS5/4/HTTP engine
+│   ├── mtproto.py               # MTProto Fake-TLS 1.3 engine
+│   ├── agent_manager.py         # Reverse node pool & load balancer
+│   ├── protocol.py              # Multiplexing binary protocol
+│   └── requirements.txt         # Dependencies (cryptography)
 │
-├── socks-reverse/               # Исполняющий сервер (выход в интернет)
-│   ├── config.json              # Адрес control-сервера и токен
-│   ├── protocol.py              # Бинарный протокол
-│   ├── agent.py                 # Агент: исполнение запросов в интернет
-│   ├── client.py                # Главная точка входа reverse-ноды
-│   ├── start.sh / start.bat     # Скрипты быстрого запуска
-│   └── socks-reverse.service    # Systemd-юнит для автозапуска
+├── socks-reverse/               # Outbound Reverse Exit Node
+│   ├── config.example.json      # Node configuration template
+│   ├── client.py                # Exit node launcher
+│   ├── agent.py                 # Remote traffic executor
+│   ├── protocol.py              # Multiplexing protocol
+│   └── requirements.txt         # Zero dependencies (Python standard library)
 │
-├── reverse-multi-tor/           # Multi-Tor кластер на 10 независимых IP-узлов
-│   ├── cluster.py               # Оркестратор запуска 10 reverse-нод
-│   ├── tor_agent.py             # Tor-агент со stream-изоляцией портов
-│   ├── generate_torrc.py        # Генератор multi-port torrc (9050..9059)
-│   ├── rotate_ips.py            # Мгновенная смена всех IP (SIGNAL NEWNYM)
-│   ├── start_tor.sh             # Скрипт автоустановки и запуска Tor
-│   ├── start_cluster.sh         # Главный запуск Tor + 10 агентов
-│   ├── config.json              # Конфигурация подключения к control-серверу
-│   └── reverse-multi-tor.service# Systemd-юнит для автозапуска
+├── reverse-multi-tor/           # Multi-Tor 10-node Cluster Module
+│   ├── cluster.py               # Tor agent orchestrator
+│   ├── start_tor.sh             # Tor multi-port setup script
+│   └── start_cluster.sh         # Master launch script
 │
-├── test_system.py               # Полный тест: SOCKS5 + Admin + MTProto Fake-TLS
-├── test_multi_tor_cluster.py    # Тест Multi-Tor reverse кластера
-├── test_client.py               # Тестовый SOCKS5-клиент
-└── README.md                    # Документация
+├── test_system.py               # End-to-end integration test suite
+└── README.md                    # Documentation
 ```
 
 ---
 
-## 🚀 Инструкция по установке и запуску
+## 🚀 Quick Start Guide
 
-### Шаг 1. На основном сервере (`socks-control` на Ubuntu)
+### Step 1. Master Server Setup (`socks-control`)
 
-1. Установите библиотеку `cryptography`:
+1. Install dependencies:
    ```bash
    sudo apt update
-   sudo apt install -y python3-cryptography python3-pip
+   sudo apt install -y python3 python3-pip
+   cd socks-control
+   pip install -r requirements.txt
    ```
-2. Откройте порты в UFW:
+
+2. Configure firewall ports:
    ```bash
    sudo ufw allow 1080/tcp comment "SOCKS5 proxy"
    sudo ufw allow 8443/tcp comment "Telegram MTProto Fake-TLS"
    sudo ufw allow 9000/tcp comment "Reverse control bridge"
    sudo ufw allow 9001/tcp comment "Admin Web Panel"
    ```
-3. Проверьте `socks-control/config.json`:
-   ```json
-   {
-     "socks5": {
-       "host": "0.0.0.0",
-       "port": 1080
-     },
-     "mtproto": {
-       "enabled": true,
-       "host": "0.0.0.0",
-       "port": 8443,
-       "secret": "d04843361111fc744f516582107f9fb6",
-       "domain": "google.com",
-       "mask_host": "google.com",
-       "mask_port": 443
-     },
-     "control": {
-       "host": "0.0.0.0",
-       "port": 9000,
-       "secret_token": "SecretProxyToken2026!"
-     },
-     "admin": {
-       "host": "0.0.0.0",
-       "port": 9001,
-       "username": "admin",
-       "password": "changeme123"
-     },
-     "balance_strategy": "random",
-     "log_level": "INFO"
-   }
-   ```
-4. Запустите:
+
+3. Initialize configuration:
    ```bash
-   cd socks-control
+   cp config.example.json config.json
+   ```
+
+4. Launch server:
+   ```bash
    python3 server.py
-   # Или через фоновый скрипт:
-   chmod +x start.sh && ./start.sh
    ```
 
 ---
 
-### Шаг 2. Подключение Telegram в 1 клик через веб-админку
+### Step 2. One-Click Telegram Connection
 
-1. Откройте в браузере: `http://IP_ВАШЕГО_СЕРВЕРА:9001`
-2. Введите логин: `admin` и пароль: `changeme123`.
-3. В зеленом блоке **«⚡ Telegram MTProto Proxy (Fake-TLS)»** нажмите зеленую кнопку:
-   **«🚀 Подключить в Telegram (1 клик)»**
-4. Telegram автоматически откроет окно настроек с заполненными параметрами:
-   - **Сервер:** ваш IP
-   - **Порт:** `8443`
-   - **Секрет:** `eed04843361111fc744f516582107f9fb6676f6f676c652e636f6d`
-5. Нажмите **«Включить прокси»**. Telegram мгновенно перейдет в статус **«Подключен»**!
+1. Open your browser and navigate to: `http://YOUR_SERVER_IP:9001`
+2. Sign in with `admin` / `changeme123`.
+3. In the **Telegram MTProto Proxy** card, click **🚀 Connect in Telegram (1-Click)**.
+4. Telegram will automatically open and prompt to enable your secure Fake-TLS proxy.
 
 ---
 
-### Шаг 3. Запуск исполняющих серверов (`socks-reverse`)
+### Step 3. Launching Reverse Exit Nodes (`socks-reverse`)
 
-#### Вариант А: Обычный сервер / VPS (Plain TCP или прямой Fake-TLS)
-1. В `socks-reverse/config.json` укажите IP вашего `socks-control`:
-   ```json
-   {
-     "control_server": {
-       "host": "IP_ВАШЕГО_SOCKS_CONTROL",
-       "port": 9000,
-       "secret_token": "SecretProxyToken2026!"
-     },
-     "agent_id": "reverse-node-1"
-   }
-   ```
-2. Запустите агент:
-   ```bash
-   cd socks-reverse
-   python3 client.py --agent-id node-1
-   ```
-   *(Или с Fake-TLS напрямую: `python3 client.py --fake-tls --fake-tls-domain google.com`)*
+Run an exit node on any VPS, cloud VM, or machine behind NAT:
 
-#### Вариант Б: PythonAnywhere (Бесплатный тариф / Ограниченная сеть)
-На бесплатном тарифе PythonAnywhere запрещены прямые исходящие TCP-сокеты на нестандартные порты, но разрешен исходящий трафик через HTTP-прокси `http://proxy.server:3128` на доверенные домены (белый список, например `api.telegram.org` или `google.com`).
+```bash
+cd socks-reverse
+cp config.example.json config.json
 
-1. В `socks-reverse/config.json` настройте секции `fake_tls` и `http_proxy`:
-   ```json
-   {
-     "control_server": {
-       "host": "IP_ВАШЕГО_SOCKS_CONTROL",
-       "port": 9000,
-       "secret_token": "SecretProxyToken2026!"
-     },
-     "fake_tls": {
-       "enabled": true,
-       "domain": "api.telegram.org"
-     },
-     "http_proxy": {
-       "enabled": true,
-       "proxy_url": "http://proxy.server:3128",
-       "connect_host": "api.telegram.org"
-     },
-     "agent_id": "pythonanywhere-node"
-   }
-   ```
-2. Либо запустите одной командой через CLI:
-   ```bash
-   python3 client.py --host IP_ВАШЕГО_SOCKS_CONTROL --port 9000 \
-     --token SecretProxyToken2026! \
-     --agent-id pythonanywhere-node \
-     --fake-tls --fake-tls-domain api.telegram.org \
-     --http-proxy http://proxy.server:3128 --connect-host api.telegram.org
-   ```
-3. Сервер `socks-control` автоматически распознает Fake-TLS рукопожатие, свяжет ноду и в веб-админке покажет бейдж `🔒 Fake-TLS (api.telegram.org)`. Все запросы пользователей будут проксироваться через PythonAnywhere!
+# Launch agent (zero external dependencies required):
+python3 client.py --host YOUR_CONTROL_SERVER_IP --port 9000 --token SecretProxyToken2026! --agent-id exit-node-1
+```
+
+*With Fake-TLS encapsulation:*
+```bash
+python3 client.py --host YOUR_CONTROL_SERVER_IP --port 9000 --token SecretProxyToken2026! --agent-id exit-node-1 --fake-tls --fake-tls-domain google.com
+```
 
 ---
 
-## 🧪 Запуск тестов
+### Step 4. Multi-Tor 10-Node Cluster (Optional)
 
-Для проверки всей системы (SOCKS5, строгая аутентификация, веб-админка, MTProto Fake-TLS и ротация нод):
+```bash
+cd reverse-multi-tor
+sudo bash start_cluster.sh
+```
+
+---
+
+## 🧪 Testing
+
+Run the full end-to-end integration test suite locally:
 ```bash
 python test_system.py
 ```
-Тест разворачивает все компоненты локально, эмулирует клиента Telegram с Fake-TLS рукопожатием, проверяет прохождение пакетов через reverse-агента в дата-центр Telegram и подтверждает корректность ответов.
 
 ---
 
-## ⚙️ Установка в Systemd на Ubuntu (Автозапуск при перезагрузке)
+## 📄 License
 
-```bash
-# Для socks-control:
-sudo cp -r socks-control /opt/socks-control
-sudo cp /opt/socks-control/socks-control.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now socks-control
-
-# Просмотр логов в реальном времени:
-sudo journalctl -u socks-control -f
-```
+This project is licensed under the [MIT License](LICENSE).
