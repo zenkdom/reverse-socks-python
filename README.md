@@ -144,6 +144,7 @@ reverse-socks-python/
 │   ├── start_tor.sh             # Tor multi-port setup script
 │   └── start_cluster.sh         # Master launch script
 │
+├── install.sh                   # One-line interactive Linux installer
 └── README.md                    # Documentation
 ```
 
@@ -151,7 +152,25 @@ reverse-socks-python/
 
 ## 🚀 Quick Start Guide
 
-### Step 1. Master Server Setup (`socks-control`)
+### ⚡ One-Line Automated Installer (Recommended)
+
+Set up the cluster on any Linux VPS (Ubuntu/Debian) in under 60 seconds:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/zenkdom/reverse-socks-python/main/install.sh | bash
+```
+
+The interactive installer will:
+1. Ask for configuration settings in order (ports, credentials, tokens) with smart defaults.
+2. Automatically configure UFW firewall rules if active.
+3. Set up and start the background `systemd` service (`socks-control`).
+4. Display your **Web Admin Dashboard URL**, **credentials**, and direct **1-click Telegram Fake-TLS link**!
+
+---
+
+### Manual Installation
+
+#### Step 1. Master Server Setup (`socks-control`)
 
 1. Install dependencies:
    ```bash
